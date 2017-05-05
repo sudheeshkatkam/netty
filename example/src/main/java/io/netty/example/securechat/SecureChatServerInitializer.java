@@ -23,6 +23,8 @@ import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a new channel.
@@ -36,7 +38,13 @@ public class SecureChatServerInitializer extends ChannelInitializer<SocketChanne
     }
 
     @Override
-    public void initChannel(SocketChannel ch) throws Exception {
+    public void initChannel(final SocketChannel ch) throws Exception {
+        ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
+            @Override
+            public void operationComplete(Future<? super Void> future) throws Exception {
+                System.err.println("Connection [" + ch.remoteAddress() + "] closed.");
+            }
+        });
         ChannelPipeline pipeline = ch.pipeline();
 
         // Add SSL handler first to encrypt and decrypt everything.

@@ -42,14 +42,25 @@ public class SecureChatServerHandler extends SimpleChannelInboundHandler<String>
                 new GenericFutureListener<Future<Channel>>() {
                     @Override
                     public void operationComplete(Future<Channel> future) throws Exception {
-                        ctx.writeAndFlush(
+                        final Throwable throwable = future.cause();
+                        if (throwable == null) {
+                            System.err.println("SSL handshake from [" + ctx.channel().remoteAddress()
+                                + "] succeeded.");
+                            ctx.writeAndFlush(
                                 "Welcome to " + InetAddress.getLocalHost().getHostName() + " secure chat service!\n");
-                        ctx.writeAndFlush(
+                            ctx.writeAndFlush(
                                 "Your session is protected by " +
-                                        ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() +
-                                        " cipher suite.\n");
+                                    ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() +
+                                    " cipher suite.\n");
 
-                        channels.add(ctx.channel());
+                            for (Channel c : channels) {
+                                c.writeAndFlush("[" + ctx.channel().remoteAddress() + "] joined the room.\n");
+                            }
+                            channels.add(ctx.channel());
+                        } else {
+                            System.err.println("SSL handshake failed. [" + ctx.channel().remoteAddress()
+                                + "] tried to connect. Cause: " + throwable);
+                        }
                     }
         });
     }
@@ -67,6 +78,10 @@ public class SecureChatServerHandler extends SimpleChannelInboundHandler<String>
 
         // Close the connection if the client has sent 'bye'.
         if ("bye".equals(msg.toLowerCase())) {
+            channels.remove(ctx.channel());
+            for (Channel c: channels) {
+                c.writeAndFlush("[" + ctx.channel().remoteAddress() + "] left the room.\n");
+            }
             ctx.close();
         }
     }

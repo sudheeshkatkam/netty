@@ -15,13 +15,37 @@
  */
 package io.netty.example.securechat;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+
+import java.net.InetAddress;
 
 /**
  * Handles a client-side channel.
  */
 public class SecureChatClientHandler extends SimpleChannelInboundHandler<String> {
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(
+            new GenericFutureListener<Future<Channel>>() {
+                @Override
+                public void operationComplete(Future<Channel> future) throws Exception {
+                    final Throwable throwable = future.cause();
+                    if (throwable == null) {
+                        System.err.println("SSL handshake succeeded. Tried to connect to [" +
+                            ctx.channel().remoteAddress() + "]");
+                    } else {
+                        System.err.println("SSL handshake failed. Tried to connect to ["
+                            + ctx.channel().remoteAddress() + "]. Cause: " + throwable);
+                    }
+                }
+            });
+    }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {

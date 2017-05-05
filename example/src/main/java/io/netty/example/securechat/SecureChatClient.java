@@ -18,6 +18,7 @@ package io.netty.example.securechat;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -36,6 +37,7 @@ public final class SecureChatClient {
 
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8992"));
+    static final boolean USE_LE = Boolean.parseBoolean(System.getProperty("lebba", "false"));
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
@@ -48,6 +50,9 @@ public final class SecureChatClient {
             b.group(group)
              .channel(NioSocketChannel.class)
              .handler(new SecureChatClientInitializer(sslCtx));
+            if (USE_LE) {
+                b.option(ChannelOption.ALLOCATOR, new LittleEndianByteBufAllocator());
+            }
 
             // Start the connection attempt.
             Channel ch = b.connect(HOST, PORT).sync().channel();

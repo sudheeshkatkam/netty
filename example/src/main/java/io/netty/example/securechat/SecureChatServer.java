@@ -16,6 +16,7 @@
 package io.netty.example.securechat;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -32,6 +33,7 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 public final class SecureChatServer {
 
     static final int PORT = Integer.parseInt(System.getProperty("port", "8992"));
+    static final boolean USE_LE = Boolean.parseBoolean(System.getProperty("lebba", "false"));
 
     public static void main(String[] args) throws Exception {
         SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -47,6 +49,9 @@ public final class SecureChatServer {
              .handler(new LoggingHandler(LogLevel.INFO))
              .childHandler(new SecureChatServerInitializer(sslCtx));
 
+            if (USE_LE) {
+                b.option(ChannelOption.ALLOCATOR, new LittleEndianByteBufAllocator());
+            }
             b.bind(PORT).sync().channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
